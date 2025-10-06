@@ -19,6 +19,27 @@ def fetch_models(query: str):
         print("Civitai API error:", e)
         return []
 
+
+# Fetch tags from Civitai API
+def fetch_tags(query: str):
+    if not query:
+        return []
+    params = {
+        "query": "anime",
+        "limit": 10,
+    }
+    try:
+        response = requests.get("https://civitai.com/api/v1/tags", params=params, timeout=10)
+        data = response.json()["items"]
+        sorted_tags = sorted(
+        data, key=lambda x: x.get("modelCount", 0), reverse=True
+        )
+        return [tag["name"] for tag in sorted_tags]
+    except Exception as e:
+        print("Civitai Tag API error:", e)
+        return []
+
+
 # Add a new tab to the WebUI
 def on_ui_tabs():
     with gr.Blocks() as demo:
