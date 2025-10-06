@@ -18,6 +18,40 @@ function setupCivitaiAutocomplete() {
   input.parentNode.appendChild(dropdown);
 
   let timer = null;
+  let selectedIndex = -1;
+
+  async function updateSuggestions(query) {
+    try {
+      const res = await fetch(`/civitai_suggest?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      dropdown.innerHTML = "";
+      selectedIndex = -1;
+
+      if (!data.results || data.results.length === 0) {
+        dropdown.hidden = true;
+        return;
+      }
+
+      data.results.forEach((name, idx) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        li.style.padding = "4px";
+        li.style.cursor = "pointer";
+
+        li.addEventListener("mousedown", () => {
+          input.value = name;
+          dropdown.hidden = true;
+        });
+
+        dropdown.appendChild(li);
+      });
+
+      dropdown.hidden = false;
+    } catch (err) {
+      console.error("API error", err);
+    }
+  }
+
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const query = input.value.trim();
@@ -25,32 +59,39 @@ function setupCivitaiAutocomplete() {
       dropdown.hidden = true;
       return;
     }
+    timer = setTimeout(() => updateSuggestions(query), 300);
+  });
 
-    timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/civitai_suggest?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        dropdown.innerHTML = "";
-        if (!data.results || data.results.length === 0) {
-          dropdown.hidden = true;
-          return;
-        }
-        data.results.forEach(name => {
-          const li = document.createElement("li");
-          li.textContent = name;
-          li.style.padding = "4px";
-          li.style.cursor = "pointer";
-          li.addEventListener("mousedown", () => {
-            input.value = name;
-            dropdown.hidden = true;
-          });
-          dropdown.appendChild(li);
-        });
-        dropdown.hidden = false;
-      } catch (err) {
-        console.error("API error", err);
+  input.addEventListener("keydown", (e) => {
+    const items = dropdown.querySelectorAll("li");
+    if (dropdown.hidden || items.length === 0) return;
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      // Tabで一番上を選択
+      selectedIndex = 0;
+      items.forEach((li, idx) => {
+        li.style.background = idx === selectedIndex ? "#def" : "white";
+      });
+    } else if (e.key === "Enter" || e.key === " ") {
+      if (selectedIndex >= 0 && selectedIndex < items.length) {
+        e.preventDefault();
+        input.value = items[selectedIndex].textContent;
+        dropdown.hidden = true;
       }
-    }, 300);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % items.length;
+      items.forEach((li, idx) => {
+        li.style.background = idx === selectedIndex ? "#def" : "white";
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+      items.forEach((li, idx) => {
+        li.style.background = idx === selectedIndex ? "#def" : "white";
+      });
+    }
   });
 
   input.addEventListener("blur", () => {
