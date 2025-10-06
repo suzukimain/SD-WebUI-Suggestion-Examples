@@ -1,7 +1,13 @@
-function setupCivitaiAutocomplete() {
-  const input = document.querySelector("#civitai-input textarea");
+/**
+ * Generic autocomplete setup function
+ * @param {string} targetSelector - CSS selector for the target input/textarea
+ * @param {function} fetcher - async function(query) => Promise<string[]>
+ */
+function setupAutocomplete(targetSelector, fetcher) {
+  const input = document.querySelector(targetSelector);
   if (!input) return;
 
+  // Create dropdown container
   const dropdown = document.createElement("ul");
   dropdown.style.position = "absolute";
   dropdown.style.background = "white";
@@ -14,30 +20,32 @@ function setupCivitaiAutocomplete() {
   dropdown.style.zIndex = "1000";
   dropdown.hidden = true;
 
+  // Ensure parent is positioned for absolute dropdown
   input.parentNode.style.position = "relative";
   input.parentNode.appendChild(dropdown);
 
   let timer = null;
   let selectedIndex = -1;
 
+  // Update dropdown suggestions
   async function updateSuggestions(query) {
     try {
-      const res = await fetch(`/civitai_suggest?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
+      const results = await fetcher(query);
       dropdown.innerHTML = "";
       selectedIndex = -1;
 
-      if (!data.results || data.results.length === 0) {
+      if (!results || results.length === 0) {
         dropdown.hidden = true;
         return;
       }
 
-      data.results.forEach((name, idx) => {
+      results.forEach((name, idx) => {
         const li = document.createElement("li");
         li.textContent = name;
         li.style.padding = "4px";
         li.style.cursor = "pointer";
 
+        // Mouse click selection
         li.addEventListener("mousedown", () => {
           input.value = name;
           dropdown.hidden = true;
@@ -48,10 +56,11 @@ function setupCivitaiAutocomplete() {
 
       dropdown.hidden = false;
     } catch (err) {
-      console.error("API error", err);
+      console.error("Autocomplete fetch error", err);
     }
   }
 
+  // Input event: fetch suggestions after debounce
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const query = input.value.trim();
@@ -62,19 +71,22 @@ function setupCivitaiAutocomplete() {
     timer = setTimeout(() => updateSuggestions(query), 300);
   });
 
+  // Keyboard navigation
   input.addEventListener("keydown", (e) => {
     const items = dropdown.querySelectorAll("li");
     if (dropdown.hidden || items.length === 0) return;
 
     if (e.key === "Tab") {
+      // Tab moves down one item
       e.preventDefault();
-      selectedIndex = 0;
+      selectedIndex = (selectedIndex + 1) % items.length;
       items.forEach((li, idx) => {
         li.style.background = idx === selectedIndex ? "#def" : "white";
       });
       items[selectedIndex].scrollIntoView({ block: "nearest" });
 
     } else if (e.key === "Enter" || e.key === " ") {
+      // Enter or Space applies the selected suggestion
       if (selectedIndex >= 0 && selectedIndex < items.length) {
         e.preventDefault();
         input.value = items[selectedIndex].textContent;
@@ -82,6 +94,7 @@ function setupCivitaiAutocomplete() {
       }
 
     } else if (e.key === "ArrowDown") {
+      // Move selection down
       e.preventDefault();
       selectedIndex = (selectedIndex + 1) % items.length;
       items.forEach((li, idx) => {
@@ -90,8 +103,27 @@ function setupCivitaiAutocomplete() {
       items[selectedIndex].scrollIntoView({ block: "nearest" });
 
     } else if (e.key === "ArrowUp") {
+      // Move selection up
       e.preventDefault();
       selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+      items.forEach((li, idx) => {
+        li.style.background = idx === selectedIndex ? "#def" : "white";
+      });
+      items[selectedIndex].scrollIntoView({ block: "nearest" });
+
+    } else if (e.key === "ArrowLeft") {
+      // Jump to the first suggestion
+      e.preventDefault();
+      selectedIndex = 0;
+      items.forEach((li, idx) => {
+        li.style.background = idx === selectedIndex ? "#def" : "white";
+      });
+      items[selectedIndex].scrollIntoView({ block: "nearest" });
+
+    } else if (e.key === "ArrowRight") {
+      // Jump to the last suggestion
+      e.preventDefault();
+      selectedIndex = items.length - 1;
       items.forEach((li, idx) => {
         li.style.background = idx === selectedIndex ? "#def" : "white";
       });
@@ -99,9 +131,23 @@ function setupCivitaiAutocomplete() {
     }
   });
 
+  // Hide dropdown when input loses focus
   input.addEventListener("blur", () => {
     setTimeout(() => dropdown.hidden = true, 200);
   });
 }
 
-onUiLoaded(setupCivitaiAutocomplete);
+/**
+ * Fetcher for Civitai API
+ */
+async function civitaiFetcher(query) {
+  if (!query) return [];
+  const res = await fetch(`/civitai_suggest?q=${encodeURIComponent(query)}`);
+  const data = await res.json();
+  return data.results || [];
+}
+
+// Initialize on WebUI load
+onUiLoaded(() => {
+  setupAutocomplete("#civitai-input textarea", civitaiFetcher);
+});
