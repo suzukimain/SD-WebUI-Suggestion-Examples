@@ -1,15 +1,7 @@
-// 候補リスト（固定）
-const fruits = [
-  "apple", "apricot", "banana", "blueberry", "cherry",
-  "grape", "kiwi", "lemon", "mango", "melon",
-  "orange", "peach", "pear", "pineapple", "strawberry", "watermelon"
-];
-
-function setupFruitAutocomplete() {
-  const input = document.querySelector("#fruit-input textarea");
+function setupCivitaiAutocomplete() {
+  const input = document.querySelector("#civitai-input textarea");
   if (!input) return;
 
-  // サジェスト用のコンテナ
   const dropdown = document.createElement("ul");
   dropdown.style.position = "absolute";
   dropdown.style.background = "white";
@@ -22,44 +14,48 @@ function setupFruitAutocomplete() {
   dropdown.style.zIndex = "1000";
   dropdown.hidden = true;
 
-  // 入力欄の親に配置
   input.parentNode.style.position = "relative";
   input.parentNode.appendChild(dropdown);
 
+  let timer = null;
   input.addEventListener("input", () => {
-    const query = input.value.toLowerCase();
-    dropdown.innerHTML = "";
+    clearTimeout(timer);
+    const query = input.value.trim();
     if (!query) {
       dropdown.hidden = true;
       return;
     }
 
-    const matches = fruits.filter(f => f.startsWith(query));
-    if (matches.length === 0) {
-      dropdown.hidden = true;
-      return;
-    }
-
-    matches.forEach(fruit => {
-      const li = document.createElement("li");
-      li.textContent = fruit;
-      li.style.padding = "4px";
-      li.style.cursor = "pointer";
-      li.addEventListener("mousedown", () => {
-        input.value = fruit;
-        dropdown.hidden = true;
-      });
-      dropdown.appendChild(li);
-    });
-
-    dropdown.hidden = false;
+    timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/civitai_suggest?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        dropdown.innerHTML = "";
+        if (!data.results || data.results.length === 0) {
+          dropdown.hidden = true;
+          return;
+        }
+        data.results.forEach(name => {
+          const li = document.createElement("li");
+          li.textContent = name;
+          li.style.padding = "4px";
+          li.style.cursor = "pointer";
+          li.addEventListener("mousedown", () => {
+            input.value = name;
+            dropdown.hidden = true;
+          });
+          dropdown.appendChild(li);
+        });
+        dropdown.hidden = false;
+      } catch (err) {
+        console.error("API error", err);
+      }
+    }, 300);
   });
 
-  // フォーカス外れたら閉じる
   input.addEventListener("blur", () => {
     setTimeout(() => dropdown.hidden = true, 200);
   });
 }
 
-// WebUIロード時に実行
-onUiLoaded(setupFruitAutocomplete);
+onUiLoaded(setupCivitaiAutocomplete);
