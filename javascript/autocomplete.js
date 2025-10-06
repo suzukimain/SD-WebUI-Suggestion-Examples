@@ -115,9 +115,6 @@ const getCaretCoordinates = (function () {
     };
 })();
 
-// ==============================
-// キャレット操作ヘルパー
-// ==============================
 const CHAR_CODE_ZERO = "0".charCodeAt(0);
 const CHAR_CODE_NINE = "9".charCodeAt(0);
 
