@@ -1,4 +1,4 @@
-// 簡易オートコンプリート
+// 候補リスト（固定）
 const fruits = [
   "apple", "apricot", "banana", "blueberry", "cherry",
   "grape", "kiwi", "lemon", "mango", "melon",
@@ -9,7 +9,7 @@ function setupFruitAutocomplete() {
   const input = document.querySelector("#fruit-input textarea");
   if (!input) return;
 
-  // サジェスト用のドロップダウンを作成
+  // サジェスト用のコンテナ
   const dropdown = document.createElement("ul");
   dropdown.style.position = "absolute";
   dropdown.style.background = "white";
@@ -21,6 +21,9 @@ function setupFruitAutocomplete() {
   dropdown.style.overflowY = "auto";
   dropdown.style.zIndex = "1000";
   dropdown.hidden = true;
+
+  // 入力欄の親に配置
+  input.parentNode.style.position = "relative";
   input.parentNode.appendChild(dropdown);
 
   input.addEventListener("input", () => {
@@ -42,7 +45,7 @@ function setupFruitAutocomplete() {
       li.textContent = fruit;
       li.style.padding = "4px";
       li.style.cursor = "pointer";
-      li.addEventListener("click", () => {
+      li.addEventListener("mousedown", () => {
         input.value = fruit;
         dropdown.hidden = true;
       });
