@@ -68,29 +68,34 @@ function setupCivitaiAutocomplete() {
 
     if (e.key === "Tab") {
       e.preventDefault();
-      // Tabで一番上を選択
       selectedIndex = 0;
       items.forEach((li, idx) => {
         li.style.background = idx === selectedIndex ? "#def" : "white";
       });
+      items[selectedIndex].scrollIntoView({ block: "nearest" });
+
     } else if (e.key === "Enter" || e.key === " ") {
       if (selectedIndex >= 0 && selectedIndex < items.length) {
         e.preventDefault();
         input.value = items[selectedIndex].textContent;
         dropdown.hidden = true;
       }
+
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       selectedIndex = (selectedIndex + 1) % items.length;
       items.forEach((li, idx) => {
         li.style.background = idx === selectedIndex ? "#def" : "white";
       });
+      items[selectedIndex].scrollIntoView({ block: "nearest" });
+
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       selectedIndex = (selectedIndex - 1 + items.length) % items.length;
       items.forEach((li, idx) => {
         li.style.background = idx === selectedIndex ? "#def" : "white";
       });
+      items[selectedIndex].scrollIntoView({ block: "nearest" });
     }
   });
 
