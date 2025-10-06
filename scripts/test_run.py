@@ -1,13 +1,39 @@
 import gradio as gr
-from modules import script_callbacks
+import requests
+from modules import script_callbacks, shared
+
+
+def fetch_models(query: str):
+    if not query:
+        return []
+    params = {
+        "query": query,
+        "sort": "Most Downloaded",
+        "limit": 10,
+    }
+    try:
+        response = requests.get("https://civitai.com/api/v1/models", params=params, timeout=10)
+        data = response.json()
+        return [item["name"] for item in data.get("items", [])]
+    except Exception as e:
+        print("Civitai API error:", e)
+        return []
+
 
 def on_ui_tabs():
     with gr.Blocks() as demo:
-        with gr.Tab("autocomplete"):
-            gr.Markdown("## 🍎 Fruit Autocomplete Sample")
-            # elem_id を指定して JS 側から参照できるようにする
-            gr.Textbox(label="Type a fruit name", elem_id="fruit-input")
+        with gr.Tab("Civitai Autocomplete"):
+            gr.Markdown("## 🔍 Civitai Model Autocomplete")
+            gr.Textbox(label="Type model name", elem_id="civitai-input")
 
-    return [(demo, "Autocomplete", "autocomplete_tab")]
+    return [(demo, "Civitai Autocomplete", "civitai_autocomplete_tab")]
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
+
+
+def on_app_started(demo, app):
+    @app.get("/civitai_suggest")
+    async def civitai_suggest(q: str = ""):
+        return {"results": fetch_models(q)}
+
+script_callbacks.on_app_started(on_app_started)
