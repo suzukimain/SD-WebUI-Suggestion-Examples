@@ -50,12 +50,13 @@ def on_ui_tabs():
 
     return [(demo, "Civitai Autocomplete", "civitai_autocomplete_tab")]
 
-script_callbacks.on_ui_tabs(on_ui_tabs)
 
 # Add FastAPI endpoint for suggestions
 def on_app_started(demo, app):
     @app.get("/civitai_suggest")
     async def civitai_suggest(q: str = ""):
         return {"results": fetch_models(q)}
+    
 
+script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_app_started(on_app_started)
