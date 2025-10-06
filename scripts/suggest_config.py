@@ -25,7 +25,7 @@ def fetch_tags(query: str):
     if not query:
         return []
     params = {
-        "query": "anime",
+        "query": query,
         "limit": 10,
     }
     try:
